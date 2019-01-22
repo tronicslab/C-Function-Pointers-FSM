@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <stdio.h> // printf
 
 #define CLOSED  0
 #define OPEN    1
@@ -8,29 +8,27 @@
 #define UNKNOWN 5
 #define OFF     0
 #define ON      1
-
+/*
 typedef struct {
     int openSW;
     int closedSW;
 } Sensors;
-
+*/
 typedef void (*fp_event)(int *x);  /* this defines a type fp_event */
 int state = CLOSED;
 
-int confirmSensors(int expectedOpenSW, int expectedClosedSW, Sensors *myDoor);
+//int confirmSensors(int expectedOpenSW, int expectedClosedSW, Sensors *myDoor);
 void btnPress(int *current_state);
 void virtualBtnPress(int *current_state);
 
 fp_event fp_arr[] = {btnPress, virtualBtnPress};
 
-
 int main(void) {
     fp_event event_list;
-    Sensors doorSensors;
+    //Sensors doorSensors;
 
-    doorSensors.openSW = ON;
-    doorSensors.closedSW = ON;
-
+    //doorSensors.openSW = ON;
+    //doorSensors.closedSW = ON;
 
     event_list = fp_arr[1];
     event_list(&state);
@@ -86,6 +84,7 @@ void virtualBtnPress(int *current_state) {
     }
 }
 
+/*
 int confirmSensors(int expectedOpenSW, int expectedClosedSW, Sensors *myDoor) {
     if( (expectedOpenSW == myDoor->openSW) && (expectedClosedSW == myDoor->closedSW) ) {
         return 1;
@@ -93,6 +92,7 @@ int confirmSensors(int expectedOpenSW, int expectedClosedSW, Sensors *myDoor) {
         return 0;
     }
 }
+*/
 
     // Now we have defined a type called action_handler that takes two pointers and returns a int
 //    typedef  int (*action_handler_t)(void *ctx, void *data);
