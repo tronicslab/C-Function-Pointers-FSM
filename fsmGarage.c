@@ -1,16 +1,19 @@
 #include <stdio.h> // printf
 
-#define OFF     0
-#define ON      1
+#define FALSE     0
+#define TRUE      1
 
-typedef void (*fp_doState)(int *x);  /* this defines a type fp_event */
+typedef void (*fp_doState)(stateElement *x);  /* this defines a type fp_doState */
 
-void handle_state_DoorClosed(void);
-void handle_state_DoorOpen(void);
-void handle_state_DoorClosing(void);
-void handle_state_DoorOpening(void);
-void handle_state_DoorStopped(void);
-void handle_state_DoorUnknown(void);
+uint8_t btnPress(void);
+uint8_t virtualBtnPress(void);
+
+void handle_state_DoorClosed(stateElement *current_state);
+void handle_state_DoorOpen(stateElement *current_state);
+void handle_state_DoorClosing(stateElement *current_state);
+void handle_state_DoorOpening(stateElement *current_state);
+void handle_state_DoorStopped(stateElement *current_state);
+void handle_state_DoorUnknown(stateElement *current_state);
 
 typedef enum {
     DOORCLOSED,
@@ -22,69 +25,81 @@ typedef enum {
 } state;
 
 typedef struct {
-    state nextState;
-    
+    state lastState;
+    state thisState;
+    uint8_t currStateConfirmed;
 } stateElement;
 
-//int state = CLOSED;
-//void handle_event_ButtonPress(int *current_state);
-//void handle_event_VirtualButtonPress(int *current_state);
-
-//fp_event fp_arr[] = {btnPress, virtualBtnPress};
-
 int main(void) {
-    fp_event event_list;
-    
-    event_list = fp_arr[1];
-    event_list(&state);
-    printf("%d\n", state);
-    event_list = fp_arr[0];
-    event_list(&state);
-    printf("%d\n", state);
-    event_list = fp_arr[1];
-    event_list(&state);
-    printf("%d\n", state);
-    return 0;
+    stateElement currentState = { DOORUNKNOWN, DOORUNKNOWN, FALSE};
+    checkSensors();
 }
 
-void btnPress(int *current_state) { 
-    switch(*current_state) {
-        case CLOSED:
-            *current_state = OPENING;
-            break;
-        case OPEN:
-            *current_state = CLOSING;
-            break;
-        case CLOSING:
-        case OPENING:
-            *current_state = STOPPED;
-            break;
-        case STOPPED:
-            *current_state = UNKNOWN;
-            break;
-        default:
-            *current_state = UNKNOWN;
-            break;
+void handle_state_DoorClosed(stateElement *current_state) {
+    if(btnPress() || virtualBtnPress()) {
+        fp_doState = handle_state_DoorOpening;
     }
 }
 
-void virtualBtnPress(int *current_state) {
-    switch(*current_state) {
-        case CLOSED:
-            *current_state = OPENING;
-            break;
-        case OPEN:
-            *current_state = CLOSING;
-            break;
-        case CLOSING:
-        case OPENING:
-            // Don't allow virtual button press while door in motion
-            break;
-        case STOPPED:
-            *current_state = UNKNOWN;
-            break;
-        default:
-            *current_state = UNKNOWN;
-            break;
+void handle_state_DoorOpen(stateElement *current_state) {
+    if(btnPress() || virtualBtnPress()) {
+        fp_doState = handle_state_DoorClosing;
+    }
+}
+
+void handle_state_DoorClosing(stateElement *current_state) {
+    if(btnPress()) {
+        fp_doState = handle_state_DoorClosed;
+    }
+    if(virtualBtnPress()) {
+        // Cannot stop door close remotely
+    }
+}
+
+void handle_state_DoorOpening(stateElement *current_state) {
+    if(btnPress()) {
+        fp_doState = handle_state_DoorOpen;
+    }
+    if(virtualBtnPress()) {
+        // Cannot stop door close remotely
+    }
+}
+
+void handle_state_DoorStopped(stateElement *current_state) {
+    if(btnPress() || virtualBtnPress()) {
+        fp_doState = handle_state_DoorUnknown;
+    }
+}
+
+void handle_state_DoorUnknown(stateElement *current_state) {
+    if(btnPress() || virtualBtnPress()) {
+        fp_doState = handle_state_DoorOpening;
+    }
+
+}
+
+uint8_t btnPress(void) { 
+    // check if button pressed
+}
+
+uint8_t virtualBtnPress(void) {
+    // check if virtual button pressed
+}
+
+uint8_t checkSensors(void) {
+    // get sensors value
+    // sensor open, sensor closed
+    // 0, 0 door stopped or opening or closing
+    // 0, 1 door closed
+    // 1, 0 door open
+    // 1, 1 invalid
+    uint8_t openSensor = readOpenSensor();
+    uint8_t closedSensor = readClosedSensor();
+    if(openSensor && !closedSensor) {        // door open
+        return (state) DOOROPEN;
+    } else if(!openSensor && closedSensor) { // door closed
+        return (state) DOORCLOSED;
+    } else if(!openSensor && !closedSensor) {
+        
     }
 }

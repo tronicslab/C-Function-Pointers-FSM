@@ -31,12 +31,15 @@ int main(void) {
     //doorSensors.closedSW = ON;
 
     event_list = fp_arr[1];
+    printf("From state %d to ", state);
     event_list(&state);
     printf("%d\n", state);
     event_list = fp_arr[0];
+    printf("From state %d to ", state);
     event_list(&state);
     printf("%d\n", state);
     event_list = fp_arr[1];
+    printf("From state %d to ", state);
     event_list(&state);
     printf("%d\n", state);
     return 0;
