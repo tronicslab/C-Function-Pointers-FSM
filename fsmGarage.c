@@ -28,11 +28,11 @@ void handle_state_DoorUnknown(stateElement *current_state);
 typedef void (*fp_doState)(stateElement *x);  /* this defines a type fp_doState */
 
 typedef enum {
+    DOOROPENING = 0,        // basically the same state. previous state decides which of
+    DOORCLOSING = 0,        // these states becomes the next state after button press event
+    DOORSTOPPED = 0,
     DOORCLOSED,
-    DOOROPENING,
     DOOROPEN,
-    DOORCLOSING,
-    DOORSTOPPED,
     DOORUNKNOWN
 } state;
 
@@ -46,7 +46,9 @@ int main(void) {
     stateElement currentState;
     initializeState(&currentState);
     while(1) {
-        fp_doState(&currentState);    
+        fp_doState(&currentState);
+        // do other stuff like monitor control from phones
+        // update lcd, and time.  
     }
 }
 
@@ -82,8 +84,14 @@ void handle_state_DoorOpen(stateElement *current_state) {
     }
 }
 
-void handle_state_DoorClosing(stateElement *current_state) {
-    if( (!current_state->currStateConfirmed) && (checkSensors() == current_state->thisState) ) {
+void handle_state_DoorClosing(stateElement *current_state) { // check for timeout if no concrete state is reached after closing starts 
+    if( (!current_state->currStateConfirmed) && (checkSensors() == current_state->thisState) && (current_state->lastState == DOOROPEN) ) {
+        current_state->currStateConfirmed = TRUE;
+    }
+    if( (current_state->currStateConfirmed) && (checkSensors() == DOORCLOSED) ) { // Door has finished closing
+        fp_doState = handle_state_DoorClosed;
+        current_state->lastState = current_state->thisState;
+        current_state->thisState = DOORCLOSED; 
         current_state->currStateConfirmed = TRUE;
     }
     if(btnPress()) {
@@ -97,28 +105,52 @@ void handle_state_DoorClosing(stateElement *current_state) {
     }*/
 }
 
-void handle_state_DoorOpening(stateElement *current_state) {
+void handle_state_DoorOpening(stateElement *current_state) { // check for timeout if no concrete state is reached after opening starts
     if( (!current_state->currStateConfirmed) && (checkSensors() == current_state->thisState) ) {
         current_state->currStateConfirmed = TRUE;
     }
-    if(btnPress()) {
+    if( (current_state->currStateConfirmed) && (checkSensors() == DOOROPEN) ) { // Door has finished opening
         fp_doState = handle_state_DoorOpen;
+        current_state->lastState = current_state->thisState;
+        current_state->thisState = DOOROPEN; 
+        current_state->currStateConfirmed = TRUE;
+    }
+    if(btnPress()) {
+        fp_doState = handle_state_DoorStopped;
+        current_state->lastState = current_state->thisState;
+        current_state->thisState = DOORSTOPPED; 
+        current_state->currStateConfirmed = FALSE;
     }
     /*if(virtualBtnPress()) {
         // Cannot stop door open remotely
     }*/
 }
 
-void handle_state_DoorStopped(stateElement *current_state) { // may need more state confirmed
+void handle_state_DoorStopped(stateElement *current_state) {
     if( (!current_state->currStateConfirmed) && (checkSensors() == current_state->thisState) ) {
         current_state->currStateConfirmed = TRUE;
     }
     if(btnPress() || virtualBtnPress()) {
-        fp_doState = handle_state_DoorUnknown;
+        if(current_state->lastState == DOOROPENING) {
+            fp_doState = handle_state_DoorClosing;
+            current_state->lastState = current_state->thisState;
+            current_state->thisState = DOORCLOSING;
+            current_state->currStateConfirmed = FALSE;
+        } else if(current_state->lastState == DOORCLOSING) {
+            fp_doState = handle_state_DoorOpening;
+            current_state->lastState = current_state->thisState;
+            current_state->thisState = DOOROPENING;
+            current_state->currStateConfirmed = FALSE;
+        } else {
+            fp_doState = handle_state_DoorUnknown;
+            current_state->lastState = current_state->thisState;
+            current_state->thisState = DOORUNKNOWN;
+            current_state->currStateConfirmed = FALSE;
+        }
     }
 }
 
-void handle_state_DoorUnknown(stateElement *current_state) {
+void handle_state_DoorUnknown(stateElement *current_state) { // cannot confirm doorunknown state?
     if(btnPress() || virtualBtnPress()) {
         fp_doState = handle_state_DoorOpening;
     }
