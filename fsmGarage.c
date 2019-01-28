@@ -71,7 +71,7 @@ int main(void) {
     printf("Getting initial state...\n");
     initializeState(&currentState);
     printf("lastState %d\nthisState %d\n", currentState.lastState, currentState.thisState);
-    while(loopcount < 17) {
+    while(loopcount < 24) {
         printf("\n\nLoop %d\n", loopcount);
         printf("lastState %d\nthisState %d\n", currentState.lastState, currentState.thisState);
         currentState.do_state(&currentState);
@@ -102,6 +102,18 @@ int main(void) {
         }
         if(loopcount == 14) {
             fakeButton = 1;
+        }
+        if(loopcount == 16) {
+            openSense = 1;
+        }
+        if(loopcount == 18) {
+            fakevButton = 1;
+        }
+        if(loopcount == 20) {
+            openSense = 0;
+        }
+        if(loopcount == 22) {
+            closedSense = 1;
         }
     }
 }
